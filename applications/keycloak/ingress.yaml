@@ -1,0 +1,22 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: keycloak
+  annotations:
+    external-dns.alpha.kubernetes.io/hostname: auth.ediri.online
+spec:
+  tls:
+    - hosts:
+        - auth.ediri.online
+      secretName: auth-ediri-online-tls
+  rules:
+    - host: auth.ediri.online
+      http:
+        paths:
+          - pathType: Prefix
+            path: /
+            backend:
+              service:
+                name: keycloak
+                port:
+                  number: 8080

@@ -1,0 +1,41 @@
+version: "3"
+
+
+tasks:
+  destroy:
+    desc: Destroy the infrastructure
+    dir: infrastructure
+    cmds:
+      - terraform destroy --auto-approve
+
+  infrastructure:
+    desc: Build the DigitalOcean infrastructure
+    dir: infrastructure
+    cmds:
+      - terraform init
+      - terraform plan
+      - terraform apply --auto-approve
+
+  do_token:
+    desc: set the DO_TOKEN as secret for external dns
+    cmds:
+      - kubectl create secret generic do-token --from-literal=DO_TOKEN=$DIGITALOCEAN_TOKEN
+    env:
+      KUBECONFIG: infrastructure/kubeconfig
+
+  k8s-init:
+    desc: Check the nodes
+    cmds:
+      - kubectl get nodes
+      - helm repo add argo https://argoproj.github.io/argo-helm
+      - helm upgrade -i argocd argo/argo-cd --set dex.enabled=false --namespace argocd --create-namespace
+      - kubectl apply -f applications/main.yaml -n argocd
+      - kubectl apply -f https://raw.githubusercontent.com/openfaas/faas-netes/master/namespaces.yml
+      - kubectl create secret generic -n openfaas  openfaas-license --from-file license=/Users/dirien/.inlets/LICENSE
+    env:
+      KUBECONFIG: infrastructure/kubeconfig
+
+  default:
+    cmds:
+      - task: infrastructure
+      - task: k8s-init

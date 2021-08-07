@@ -1,0 +1,47 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: openfaas-app
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: 'https://openfaas.github.io/faas-netes/'
+    targetRevision: 8.0.2
+    chart: openfaas
+    helm:
+      values: |
+        generateBasicAuth: true
+        openfaasPRO: true
+        functionNamespace: openfaas-fn
+        ingress:
+          pathType: ImplementationSpecific
+          enabled: true
+          hosts:
+            - host: gw.oauth.ediri.online
+              serviceName: gateway
+              servicePort: 8080
+              path: /
+        oidcAuthPlugin:
+          enabled: true
+          license: "example"
+          insecureTLS: true
+          scopes: "openid profile email"
+          jwksURL: https://auth.ediri.online/auth/realms/openfaas/protocol/openid-connect/certs
+          tokenURL: https://auth.ediri.online/auth/realms/openfaas/protocol/openid-connect/token
+          audience: https://gw.oauth.ediri.online
+          authorizeURL: https://auth.ediri.online/auth/realms/openfaas/protocol/openid-connect/auth
+          welcomePageURL: https://gw.oauth.ediri.online
+          cookieDomain: ".oauth.ediri.online"
+          baseHost: "https://auth.oauth.ediri.online"
+          clientSecret: "c7f35745-851e-4836-ab6f-e51d756998c3"
+          clientID: d3915ee7-8483-4650-bc4c-a2342a9163c7
+  destination:
+    server: 'https://kubernetes.default.svc'
+    namespace: openfaas
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
